@@ -1,36 +1,49 @@
 import threading
+import logging
+from typing import List
 from guess_a_hash import time_to_find_hashed_string_value
 
-"""
-    Threading Example of a function
-        @param time_to_find_hashed_string_value: Function to find hashed string value
-        @param string_name: Name of the string to find hashed value for
-"""
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-def task(time_to_find_hashed_string_value, string_name):
-    value, duration, hash_string, attempts = time_to_find_hashed_string_value(string_name)
-    print(f"Thread for '{string_name}' found target {hash_string} of value {value} in {duration} seconds after {attempts} attempts")
+# Configuration for crypto currencies to process
+CRYPTO_TARGETS = ['Bitcoin', 'Ethereum', 'Litecoin', 'Dogecoin', 'Cardano', 'Polkadot']
 
-# Create threads for concurrent execution
-thread1 = threading.Thread(target=task, args=(time_to_find_hashed_string_value, 'Bitcoin'))
-thread2 = threading.Thread(target=task, args=(time_to_find_hashed_string_value, 'Ethereum'))
-thread3 = threading.Thread(target=task, args=(time_to_find_hashed_string_value, 'Litecoin'))
-thread4 = threading.Thread(target=task, args=(time_to_find_hashed_string_value, 'Dogecoin'))
-thread5 = threading.Thread(target=task, args=(time_to_find_hashed_string_value, 'Cardano'))
-thread6 = threading.Thread(target=task, args=(time_to_find_hashed_string_value, 'Polkadot'))
+def task(string_name: str) -> None:
+    """
+    Execute hash finding task and log results.
+    
+    Args:
+        string_name: Name of cryptocurrency to process
+    """
+    try:
+        value, duration, hash_string, attempts = time_to_find_hashed_string_value(string_name)
+        logger.info(
+            f"Thread for '{string_name}' found target {hash_string} "
+            f"of value {value} in {duration}s after {attempts} attempts"
+        )
+    except Exception as e:
+        logger.error(f"Thread for '{string_name}' failed: {e}")
 
-# Start the threads
-thread1.start()
-thread2.start()
-thread3.start()
-thread4.start()
-thread5.start()
-thread6.start()
+def main() -> None:
+    """Execute threaded hash finding for multiple targets."""
+    threads: List[threading.Thread] = []
+    
+    # Create and start threads
+    for crypto in CRYPTO_TARGETS:
+        thread = threading.Thread(
+            target=task,
+            args=(crypto,),
+            name=f"Thread-{crypto}"
+        )
+        thread.start()
+        threads.append(thread)
+    
+    # Wait for completion
+    for thread in threads:
+        thread.join()
+    
+    logger.info("All threads completed successfully")
 
-# Wait for all threads to complete
-thread1.join()
-thread2.join()
-thread3.join()
-thread4.join()
-thread5.join()
-thread6.join()
+if __name__ == '__main__':
+    main()
