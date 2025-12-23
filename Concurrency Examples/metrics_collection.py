@@ -28,6 +28,9 @@ class PipelineMetrics:
             'success': self.success,
             'error': self.error_msg
         }
+# The PipelineMetrics class captures individual task metrics, 
+# while the MetricsCollector class aggregates these metrics 
+# for summary reporting.
 
 class MetricsCollector:
     """Aggregate metrics across concurrent tasks."""
