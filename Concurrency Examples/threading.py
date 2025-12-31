@@ -1,49 +1,79 @@
 import threading
+import time
 import logging
 from typing import List
 from guess_a_hash import time_to_find_hashed_string_value
+from metrics import PipelineMetrics, MetricsCollector
+from config import PipelineConfig
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+def setup_logging(config: PipelineConfig) -> logging.Logger:
+    """Configure thread-safe logging."""
+    logging.basicConfig(
+        level=getattr(logging, config.log_level),
+        format=config.log_format
+    )
+    return logging.getLogger(__name__)
 
-# Configuration for crypto currencies to process
-CRYPTO_TARGETS = ['Bitcoin', 'Ethereum', 'Litecoin', 'Dogecoin', 'Cardano', 'Polkadot']
-
-def task(string_name: str) -> None:
+def task(string_name: str, config: PipelineConfig, metrics_collector: MetricsCollector) -> None:
     """
-    Execute hash finding task and log results.
+    Execute hash finding task with metrics collection.
+    Thread-safe metrics aggregation for production monitoring.
+    """
+    logger = setup_logging(config)
+    thread_name = threading.current_thread().name
+    metric = PipelineMetrics(task_name=string_name)
     
-    Args:
-        string_name: Name of cryptocurrency to process
-    """
+    logger.info(f"{thread_name} for '{string_name}' started")
+    
     try:
         value, duration, hash_string, attempts = time_to_find_hashed_string_value(string_name)
+        metric.end_time = time.perf_counter()
+        metric.attempts = attempts
+        metric.success = True
+        
         logger.info(
-            f"Thread for '{string_name}' found target {hash_string} "
+            f"{thread_name} for '{string_name}' found target {hash_string} "
             f"of value {value} in {duration}s after {attempts} attempts"
         )
     except Exception as e:
-        logger.error(f"Thread for '{string_name}' failed: {e}")
+        metric.end_time = time.perf_counter()
+        metric.error_msg = str(e)
+        logger.error(f"{thread_name} for '{string_name}' failed: {e}")
+    finally:
+        metrics_collector.add_metric(metric)
 
 def main() -> None:
-    """Execute threaded hash finding for multiple targets."""
+    """Execute threaded hash finding with metrics collection."""
+    config = PipelineConfig.from_env()
+    logger = setup_logging(config)
+    collector = MetricsCollector()
+    
+    start_time = time.perf_counter()
+    logger.info(f"Starting threading pipeline with {len(config.crypto_targets)} targets")
+    
     threads: List[threading.Thread] = []
     
-    # Create and start threads
-    for crypto in CRYPTO_TARGETS:
+    for crypto in config.crypto_targets:
         thread = threading.Thread(
             target=task,
-            args=(crypto,),
+            args=(crypto, config, collector),
             name=f"Thread-{crypto}"
         )
         thread.start()
         threads.append(thread)
     
-    # Wait for completion
     for thread in threads:
         thread.join()
     
-    logger.info("All threads completed successfully")
+    summary = collector.summary()
+    total_duration = round(time.perf_counter() - start_time, 2)
+    
+    logger.info(
+        f"Threading pipeline completed in {total_duration}s - "
+        f"Success: {summary.get('successful', 0)}/{summary.get('total_tasks', 0)}, "
+        f"Avg Duration: {summary.get('avg_duration', 0)}s, "
+        f"Success Rate: {summary.get('success_rate', 0)}%"
+    )
 
 if __name__ == '__main__':
     main()
