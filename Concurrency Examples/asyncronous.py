@@ -1,26 +1,27 @@
 import time
 import asyncio
 import logging
-from typing import Tuple
+from typing import List
 from guess_a_hash import time_to_find_hashed_string_value
+from metrics import PipelineMetrics, MetricsCollector
+from config import PipelineConfig
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+def setup_logging(config: PipelineConfig) -> logging.Logger:
+    """Configure async-safe logging."""
+    logging.basicConfig(
+        level=getattr(logging, config.log_level),
+        format=config.log_format
+    )
+    return logging.getLogger(__name__)
 
-# Configuration
-CRYPTO_TARGETS = ['Bitcoin', 'Ethereum', 'Litecoin', 'Dogecoin', 'Cardano', 'Polkadot']
-
-async def async_task(string_name: str) -> Tuple[str, float]:
+async def async_task(string_name: str, config: PipelineConfig) -> PipelineMetrics:
     """
-    Execute hash finding asynchronously using thread pool.
+    Execute hash finding asynchronously with metrics tracking.
+    Production pattern: Non-blocking I/O for high-throughput event processing.
+    """
+    logger = setup_logging(config)
+    metric = PipelineMetrics(task_name=string_name)
     
-    Args:
-        string_name: Name of cryptocurrency to process
-        
-    Returns:
-        Tuple of (crypto_name, execution_time)
-    """
-    start_time = time.perf_counter()
     logger.info(f"Starting async task for '{string_name}'")
     
     try:
@@ -28,32 +29,47 @@ async def async_task(string_name: str) -> Tuple[str, float]:
             time_to_find_hashed_string_value,
             string_name
         )
-        total_time = round(time.perf_counter() - start_time, 4)
+        metric.end_time = time.perf_counter()
+        metric.attempts = attempts
+        metric.success = True
+        
         logger.info(
             f"Completed async task for '{string_name}' - "
             f"found {hash_string} in {duration}s ({attempts} attempts)"
         )
-        return string_name, total_time
     except Exception as e:
+        metric.end_time = time.perf_counter()
+        metric.error_msg = str(e)
         logger.error(f"Async task for '{string_name}' failed: {e}")
-        return string_name, -1.0
+    
+    return metric
 
 async def main() -> None:
-    """Execute async hash finding for all targets concurrently."""
-    start_time = time.perf_counter()
-    logger.info(f"Starting async execution for {len(CRYPTO_TARGETS)} targets")
+    """Execute async hash finding with comprehensive metrics."""
+    config = PipelineConfig.from_env()
+    logger = setup_logging(config)
+    collector = MetricsCollector()
     
-    results = await asyncio.gather(
-        *[async_task(crypto) for crypto in CRYPTO_TARGETS],
+    start_time = time.perf_counter()
+    logger.info(f"Starting async execution for {len(config.crypto_targets)} targets")
+    
+    results: List[PipelineMetrics] = await asyncio.gather(
+        *[async_task(crypto, config) for crypto in config.crypto_targets],
         return_exceptions=True
     )
     
+    for result in results:
+        if isinstance(result, PipelineMetrics):
+            collector.add_metric(result)
+    
+    summary = collector.summary()
     total_duration = round(time.perf_counter() - start_time, 2)
-    successful = sum(1 for _, duration in results if duration > 0)
     
     logger.info(
-        f"Async execution completed in {total_duration}s "
-        f"({successful}/{len(CRYPTO_TARGETS)} successful)"
+        f"Async execution completed in {total_duration}s - "
+        f"Success: {summary.get('successful', 0)}/{summary.get('total_tasks', 0)}, "
+        f"Avg Duration: {summary.get('avg_duration', 0)}s, "
+        f"Success Rate: {summary.get('success_rate', 0)}%"
     )
 
 if __name__ == '__main__':
