@@ -2,6 +2,15 @@
 
 Python examples demonstrating different concurrency patterns and GPU acceleration techniques through practical hash computation and data processing benchmarks.
 
+## Quick Start
+
+```bash
+cd "Concurrency Examples"
+python threading.py      # I/O-bound concurrency
+python multiprocess.py   # CPU-bound parallelism  
+python asynchronous.py   # High-concurrency async
+```
+
 ## Concurrency Examples
 - **Threading** - Multi-threaded execution for I/O-bound operations using cryptocurrency hash finding
 - **Async/Await** - Asynchronous programming patterns with asyncio framework for concurrent task execution
