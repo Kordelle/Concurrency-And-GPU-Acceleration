@@ -26,11 +26,14 @@ Concurrency Examples/
 
 
 ## Concurrency Examples
-- **Threading** - Multi-threaded execution for I/O-bound operations using cryptocurrency hash finding
-- **Async/Await** - Asynchronous programming patterns with asyncio framework for concurrent task execution
-- **Multiprocessing** - CPU-bound parallel processing across multiple cores with true parallelism
 
-Each concurrency example uses the [`guess_a_hash.py`](Concurrency%20Examples/guess_a_hash.py) function to simulate computational workload by finding target hash values for different cryptocurrency names (Bitcoin, Ethereum, Litecoin, Dogecoin, Cardano, Polkadot).
+Each example processes hash computations for cryptocurrency targets (Bitcoin, Ethereum, Litecoin, Dogecoin, Cardano, Polkadot) using different concurrency patterns.
+
+- **Threading** - Multi-threaded execution for I/O-bound operations
+- **Multiprocessing** - True parallelism across CPU cores, bypasses GIL
+- **Async/Await** - Non-blocking I/O with event loop concurrency
+
+All examples include structured logging, metrics collection, and environment-based configuration.
 
 ## GPU Acceleration
 - **CPU Performance** - Standard pandas operations baseline benchmarking using [`cpu_performance.py`](PandasBenchmarking/cpu_performance.py)
