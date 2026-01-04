@@ -11,6 +11,20 @@ python multiprocess.py   # CPU-bound parallelism
 python asynchronous.py   # High-concurrency async
 ```
 
+## Project Structure
+
+```
+Concurrency Examples/
+├── threading.py         # Threading pattern with metrics
+├── multiprocess.py      # Multiprocessing with Queue
+├── asynchronous.py      # Async/await pattern
+├── guess_a_hash.py      # Core computational workload
+├── metrics.py           # Performance tracking
+├── config.py            # Environment-based config
+└── type_definitions.py  # Shared types/constants
+```
+
+
 ## Concurrency Examples
 - **Threading** - Multi-threaded execution for I/O-bound operations using cryptocurrency hash finding
 - **Async/Await** - Asynchronous programming patterns with asyncio framework for concurrent task execution
