@@ -36,8 +36,11 @@ Each example processes hash computations for cryptocurrency targets (Bitcoin, Et
 All examples include structured logging, metrics collection, and environment-based configuration.
 
 ## GPU Acceleration
-- **CPU Performance** - Standard pandas operations baseline benchmarking using [`cpu_performance.py`](PandasBenchmarking/cpu_performance.py)
-- **RAPIDS cuDF** - GPU-accelerated DataFrame operations with CUDA integration via [`rapids_performance.py`](PandasBenchmarking/rapids_performance.py)
+
+- **CPU Performance** - Pandas operations baseline via [`cpu_performance.py`](PandasBenchmarking/cpu_performance.py)
+- **RAPIDS cuDF** - GPU-accelerated DataFrames via [`rapids_performance.py`](PandasBenchmarking/rapids_performance.py)
+
+Demonstrates 10-100x speedup for large dataset operations using NVIDIA CUDA acceleration.
 
 **TODO:** Multiprocessed CRUD operations in a pd.Dataframe for managing prior computational hash guesses
 
