@@ -42,9 +42,16 @@ All examples include structured logging, metrics collection, and environment-bas
 
 Demonstrates 10-100x speedup for large dataset operations using NVIDIA CUDA acceleration.
 
-**TODO:** Multiprocessed CRUD operations in a pd.Dataframe for managing prior computational hash guesses
+## Configuration
 
-The GPU acceleration examples compare traditional CPU-based pandas operations against RAPIDS cuDF for large dataset processing, demonstrating the performance gains achievable through GPU acceleration.
+Override defaults via environment variables:
+
+```bash
+export CRYPTO_TARGETS="Bitcoin,Ethereum"
+export MAX_ITERATIONS=500000
+export LOG_LEVEL=DEBUG
+python multiprocess.py
+```
 
 ## Key Implementation Details
 
