@@ -53,12 +53,12 @@ export LOG_LEVEL=DEBUG
 python multiprocess.py
 ```
 
-## Key Implementation Details
+## Performance Metrics
 
-- **Hash Function**: Uses Python's built-in `hash()` function with mathematical transformation to create simulate deterministic targets
-- **Performance Measurement**: All examples include timing mechanisms to measure execution duration
-- **RAPIDS Integration**: GPU acceleration leverages `cudf.pandas.install()` for seamless pandas API compatibility
-
+Each execution provides comprehensive metrics:
+```
+Pipeline completed in 12.34s - Success: 6/6, Avg: 2.05s, Success Rate: 100%
+```
 ## Capabilities Overview
 
 | Technique | Pros | Cons | Best Use Case |
