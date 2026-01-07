@@ -63,7 +63,7 @@ Pipeline completed in 12.34s - Success: 6/6, Avg: 2.05s, Success Rate: 100%
 
 | Technique | Pros | Cons | Best Use Case |
 |-----------|------|------|---------------|
-| **Threading** | • Low memory overhead<br>• Easy to implement<br>• Good for I/O-bound tasks | • Limited by GIL<br>• No true CPU parallelism<br>• Race condition risks | Web scraping, file I/O, network requests |
-| **Async/Await** | • Very efficient for I/O<br>• Single-threaded (no locks)<br>• Excellent scalability | • Learning curve<br>• CPU-bound tasks block<br>• Requires async libraries | HTTP APIs, database queries, concurrent downloads |
-| **Multiprocessing** | • True parallelism<br>• Bypasses GIL<br>• Uses multiple CPU cores | • High memory usage<br>• Slow inter-process communication<br>• Complex data sharing | CPU-intensive calculations, data processing, image/video processing |
-| **GPU Acceleration** | • Massive parallelism<br>• Fast for large datasets<br>• Hardware acceleration | • GPU memory limitations<br>• Setup complexity<br>• Not all operations supported | Large dataset operations, machine learning, scientific computing |
+| **Threading** | Low memory overhead<br>Easy to implement<br>Good for I/O-bound tasks | Limited by GIL<br>No true CPU parallelism<br>Race condition risks | Web scraping, file I/O, network requests |
+| **Async/Await** | Very efficient for I/O<br>Single-threaded (no locks)<br>Excellent scalability | Learning curve<br>CPU-bound tasks block<br>Requires async libraries | HTTP APIs, database queries, concurrent downloads |
+| **Multiprocessing** | True parallelism<br>Bypasses GIL<br>Uses multiple CPU cores | High memory usage<br>Slow inter-process communication<br>Complex data sharing | CPU-intensive calculations, data processing, image/video processing |
+| **GPU Acceleration** | Massive parallelism<br>Fast for large datasets<br>Hardware acceleration | GPU memory limitations<br>Setup complexity<br>Not all operations supported | Large dataset operations, machine learning, scientific computing |
