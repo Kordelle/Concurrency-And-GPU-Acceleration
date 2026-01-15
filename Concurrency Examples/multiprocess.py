@@ -1,43 +1,105 @@
 import multiprocessing
+import time
+import logging
+from typing import List, Dict
 from guess_a_hash import time_to_find_hashed_string_value
+from metrics import PipelineMetrics, MetricsCollector
+from config import PipelineConfig
 
-"""
-    Multiprocessing Example of a function
-        @param time_to_find_hashed_string_value: Function to find hashed string value
-        @param string_name: Name of the string to find hashed value for
-"""
+def setup_logging(config: PipelineConfig) -> logging.Logger:
+    """Configure process-safe logging."""
+    logging.basicConfig(
+        level=getattr(logging, config.log_level),
+        format=config.log_format
+    )
+    return logging.getLogger(__name__)
 
-# Multiprocessing Example of function
+def cpu_bound_task(string_name: str, config: PipelineConfig, result_queue: multiprocessing.Queue) -> None:
+    """
+    Execute CPU-intensive hash finding in separate process.
+    
+    Args:
+        string_name: Name of cryptocurrency to process
+        config: Pipeline configuration
+        result_queue: Queue for collecting metrics across processes
+    """
+    logger = setup_logging(config)
+    process_name = multiprocessing.current_process().name
+    metric = PipelineMetrics(task_name=string_name)
+    
+    logger.info(f"Process {process_name} for '{string_name}' started")
+    
+    try:
+        value, duration, hash_string, attempts = time_to_find_hashed_string_value(string_name)
+        metric.end_time = time.perf_counter()
+        metric.attempts = attempts
+        metric.success = True
+        
+        logger.info(
+            f"Process {process_name} for '{string_name}' found target {hash_string} "
+            f"of value {value} in {duration}s after {attempts} attempts"
+        )
+    except Exception as e:
+        metric.end_time = time.perf_counter()
+        metric.error_msg = str(e)
+        logger.error(f"Process {process_name} for '{string_name}' failed: {e}")
+    finally:
+        result_queue.put(metric.to_dict())
 
-def cpu_bound_task(string_name):
-    print(f"Process for '{string_name}' started")
-    value, duration, hash_string, i = time_to_find_hashed_string_value(string_name)
-    print(f"Process for '{string_name}' found target {hash_string} of value {value} in {duration} seconds after {i} attempts")
+def main() -> None:
+    """Execute parallel hash finding across multiple processes with metrics collection."""
+    config = PipelineConfig.from_env()
+    logger = setup_logging(config)
+    
+    start_time = time.perf_counter()
+    logger.info(
+        f"Starting multiprocessing pipeline with {config.max_workers} CPU cores available, "
+        f"processing {len(config.crypto_targets)} targets"
+    )
+    
+    # Shared queue for cross-process metrics collection
+    result_queue = multiprocessing.Queue()
+    processes: List[multiprocessing.Process] = []
+    
+    # Create and start processes
+    for crypto in config.crypto_targets:
+        process = multiprocessing.Process(
+            target=cpu_bound_task,
+            args=(crypto, config, result_queue),
+            name=f"Process-{crypto}"
+        )
+        process.start()
+        processes.append(process)
+    
+    # Wait for completion
+    for process in processes:
+        process.join()
+    
+    # Collect metrics from all processes
+    collector = MetricsCollector()
+    while not result_queue.empty():
+        metric_dict = result_queue.get()
+        metric = PipelineMetrics(
+            task_name=metric_dict['task'],
+            attempts=metric_dict['attempts']
+        )
+        metric.end_time = metric.start_time + metric_dict['duration']
+        metric.success = metric_dict['success']
+        metric.error_msg = metric_dict['error']
+        collector.add_metric(metric)
+    
+    # Log comprehensive summary
+    summary = collector.summary()
+    total_duration = round(time.perf_counter() - start_time, 2)
+    
+    logger.info(
+        f"Pipeline execution completed in {total_duration}s - "
+        f"Success: {summary.get('successful', 0)}/{summary.get('total_tasks', 0)}, "
+        f"Avg Duration: {summary.get('avg_duration', 0)}s, "
+        f"Total Attempts: {summary.get('total_attempts', 0)}, "
+        f"Success Rate: {summary.get('success_rate', 0)}%"
+    )
 
 if __name__ == '__main__':
-    # Create processes for parallel execution
-    process1 = multiprocessing.Process(target=cpu_bound_task, args=('Bitcoin',))
-    process2 = multiprocessing.Process(target=cpu_bound_task, args=('Ethereum',))
-    process3 = multiprocessing.Process(target=cpu_bound_task, args=('Litecoin',))
-    process4 = multiprocessing.Process(target=cpu_bound_task, args=('Dogecoin',))
-    process5 = multiprocessing.Process(target=cpu_bound_task, args=('Cardano',))
-    process6 = multiprocessing.Process(target=cpu_bound_task, args=('Polkadot',))
-
-    # Start the processes
-    process1.start()
-    process2.start()
-    process3.start()
-    process4.start()
-    process5.start()
-    process6.start()
-
-
-    # Wait for all processes to complete if not joined than main program may end before they complete
-    process1.join()
-    process2.join()
-    process3.join()
-    process4.join()
-    process5.join()
-    process6.join()
-
-    print("All processes completed.")
+    multiprocessing.freeze_support()  # Windows compatibility
+    main()
